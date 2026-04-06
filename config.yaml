@@ -1,0 +1,23 @@
+stream_url: "https://192.168.31.66:4444/stream"
+stream_verify_ssl: false
+stream_username: "Darkarc"
+stream_password: "Nbu147258"
+hotkey: "space"
+server_host: "0.0.0.0"
+server_port: 8000
+capture_frame_count: 8
+capture_timeout_sec: 3.0
+output_dir: "data"
+history_limit: 20
+analysis_prompt: |
+  You are analyzing a photo of a computer screen that has already been perspective-corrected.
+  Describe the visible content clearly and provide actionable observations in concise Chinese.
+  If there is code, identify the language and summarize what it does.
+  If there is an error message, explain the likely cause and suggest next steps.
+ai:
+  provider: "openai_compatible"
+  base_url: "https://api.openai.com/v1"
+  api_key: ""
+  model: "gpt-4.1-mini"
+  timeout_sec: 30
+  verify_ssl: false

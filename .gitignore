@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+data/captures/*
+data/rectified/*
+data/debug/*
+data/results/*
+!data/captures/.gitkeep
+!data/rectified/.gitkeep
+!data/debug/.gitkeep
+!data/results/.gitkeep
