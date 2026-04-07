@@ -82,6 +82,7 @@ class AppRuntime:
             ai_text = self.analyzer.analyze_image(
                 image_path=rectified_path,
                 prompt=self.settings.analysis_prompt,
+                fallback_image_path=capture_path,
             )
             stage_times["analyze_sec"] = round(time.perf_counter() - t2, 3)
 

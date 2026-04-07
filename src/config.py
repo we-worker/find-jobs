@@ -13,6 +13,12 @@ class AISettings:
     base_url: str
     api_key: str
     model: str
+    group: str
+    stream: bool
+    temperature: float
+    top_p: float
+    frequency_penalty: float
+    presence_penalty: float
     timeout_sec: float
     verify_ssl: bool
 
@@ -63,6 +69,12 @@ def load_settings(path: str | Path) -> Settings:
             base_url=ai_raw.get("base_url", "https://api.openai.com/v1"),
             api_key=ai_raw.get("api_key", ""),
             model=ai_raw.get("model", "gpt-4.1-mini"),
+            group=ai_raw.get("group", "default"),
+            stream=bool(ai_raw.get("stream", True)),
+            temperature=float(ai_raw.get("temperature", 0.7)),
+            top_p=float(ai_raw.get("top_p", 1.0)),
+            frequency_penalty=float(ai_raw.get("frequency_penalty", 0.0)),
+            presence_penalty=float(ai_raw.get("presence_penalty", 0.0)),
             timeout_sec=float(ai_raw.get("timeout_sec", 30)),
             verify_ssl=bool(ai_raw.get("verify_ssl", False)),
         ),

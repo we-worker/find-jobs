@@ -3,6 +3,20 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any, Optional
 
+import numpy as np
+
+
+def _to_builtin(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _to_builtin(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_to_builtin(item) for item in value]
+    if isinstance(value, tuple):
+        return [_to_builtin(item) for item in value]
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
+
 
 @dataclass
 class FrameScore:
@@ -12,7 +26,7 @@ class FrameScore:
     total: float
 
     def to_dict(self) -> dict[str, float]:
-        return asdict(self)
+        return _to_builtin(asdict(self))
 
 
 @dataclass
@@ -32,4 +46,4 @@ class AnalysisRecord:
     error_message: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return _to_builtin(asdict(self))
