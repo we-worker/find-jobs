@@ -276,6 +276,12 @@ def _analysis_page_html() -> str:
       color: var(--muted);
       font-size: 14px;
     }
+    .tip {
+      margin-top: 10px;
+      color: var(--accent);
+      font-size: 13px;
+      letter-spacing: 0.01em;
+    }
     pre {
       margin: 24px 0 0;
       white-space: pre-wrap;
@@ -307,10 +313,104 @@ def _analysis_page_html() -> str:
     <section class="panel">
       <h1>AI Analysis</h1>
       <div id="analysis-meta" class="meta">Loading...</div>
+      <div class="tip">Auto scroll mode: pause 10s, then slowly move one section like a teleprompter.</div>
       <pre id="analysis-text">Loading...</pre>
     </section>
   </div>
   <script>
+    const teleprompter = {
+      pauseMs: 10000,
+      moveMs: 6500,
+      segmentRatio: 0.58,
+      minSegmentPx: 260,
+      direction: 1,
+      phase: 'pause',
+      phaseStartedAt: performance.now(),
+      fromY: 0,
+      toY: 0,
+      contentKey: '',
+    };
+
+    function scrollingRoot() {
+      return document.scrollingElement || document.documentElement;
+    }
+
+    function maxScrollTop() {
+      const root = scrollingRoot();
+      return Math.max(root.scrollHeight - window.innerHeight, 0);
+    }
+
+    function setScrollTop(value) {
+      scrollingRoot().scrollTop = value;
+    }
+
+    function nextSegmentSize() {
+      return Math.max(window.innerHeight * teleprompter.segmentRatio, teleprompter.minSegmentPx);
+    }
+
+    function resetTeleprompter(goTop = true) {
+      if (goTop) {
+        setScrollTop(0);
+      }
+      teleprompter.direction = 1;
+      teleprompter.phase = 'pause';
+      teleprompter.phaseStartedAt = performance.now();
+      teleprompter.fromY = 0;
+      teleprompter.toY = 0;
+    }
+
+    function startMove(now) {
+      const currentTop = scrollingRoot().scrollTop;
+      const maxTop = maxScrollTop();
+      if (maxTop <= 1) {
+        teleprompter.phase = 'pause';
+        teleprompter.phaseStartedAt = now;
+        return;
+      }
+
+      const segment = nextSegmentSize();
+      let target = currentTop + (teleprompter.direction * segment);
+      target = Math.max(0, Math.min(maxTop, target));
+
+      if (Math.abs(target - currentTop) < 2) {
+        teleprompter.direction = currentTop >= maxTop - 2 ? -1 : 1;
+        teleprompter.phase = 'pause';
+        teleprompter.phaseStartedAt = now;
+        return;
+      }
+
+      teleprompter.fromY = currentTop;
+      teleprompter.toY = target;
+      teleprompter.phase = 'move';
+      teleprompter.phaseStartedAt = now;
+    }
+
+    function stepTeleprompter(now) {
+      if (teleprompter.phase === 'pause') {
+        if (now - teleprompter.phaseStartedAt >= teleprompter.pauseMs) {
+          startMove(now);
+        }
+      } else {
+        const progress = Math.min((now - teleprompter.phaseStartedAt) / teleprompter.moveMs, 1);
+        const eased = 0.5 - (Math.cos(Math.PI * progress) / 2);
+        const nextTop = teleprompter.fromY + ((teleprompter.toY - teleprompter.fromY) * eased);
+        setScrollTop(nextTop);
+
+        if (progress >= 1) {
+          const maxTop = maxScrollTop();
+          if (teleprompter.toY >= maxTop - 2) {
+            teleprompter.direction = -1;
+          } else if (teleprompter.toY <= 2) {
+            teleprompter.direction = 1;
+          }
+          teleprompter.phase = 'pause';
+          teleprompter.phaseStartedAt = now;
+        }
+      }
+
+      window.requestAnimationFrame(stepTeleprompter);
+    }
+
     async function refresh() {
       const latestResp = await fetch('/api/latest');
       const latest = await latestResp.json();
@@ -323,11 +423,21 @@ def _analysis_page_html() -> str:
         return;
       }
 
+      const nextText = latest.summary_text || latest.error_message || 'This run did not return any text';
+      const nextContentKey = `${latest.record_id || ''}|${latest.created_at || ''}|${latest.status || ''}|${nextText}`;
+
       meta.textContent = `${latest.created_at} | ${latest.status}`;
-      text.textContent = latest.summary_text || latest.error_message || 'This run did not return any text';
+      text.textContent = nextText;
+
+      if (teleprompter.contentKey !== nextContentKey) {
+        teleprompter.contentKey = nextContentKey;
+        resetTeleprompter(true);
+      }
     }
+    window.addEventListener('resize', () => resetTeleprompter(false));
     refresh();
     setInterval(refresh, 2000);
+    window.requestAnimationFrame(stepTeleprompter);
   </script>
 </body>
 </html>"""
